@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DevShowcase API — Painel de testes</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --border: #d0d7de;
+      --bg-card: #ffffff10;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      max-width: 960px;
+      margin: 2rem auto;
+      padding: 0 1.25rem 3rem;
+      line-height: 1.5;
+    }
+    h1 { margin-bottom: 0.25rem; }
+    p.subtitle { opacity: 0.75; margin-top: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .card h2 { margin-top: 0; font-size: 1.05rem; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: transparent;
+      color: inherit;
+    }
+    textarea { resize: vertical; min-height: 3rem; }
+    button {
+      margin-top: 1rem;
+      padding: 0.55rem 1.1rem;
+      border: none;
+      border-radius: 6px;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    pre {
+      margin-top: 0.9rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      background: #00000012;
+      max-height: 220px;
+      overflow: auto;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .status { font-weight: 600; font-size: 0.8rem; }
+    .status.ok { color: #15803d; }
+    .status.err { color: #b91c1c; }
+    .hint { font-size: 0.78rem; opacity: 0.7; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>DevShowcase API</h1>
+  <p class="subtitle">
+    Painel simples para cadastrar dados via <code>localhost</code>, sem precisar de <code>curl</code> ou do console do navegador.
+    Os formulários chamam os mesmos endpoints REST documentados no
+    <a href="https://github.com/mourapontes/atv1_python#endpoints-da-api" target="_blank" rel="noopener">README</a>.
+  </p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1. Novo perfil</h2>
+      <form id="form-profile">
+        <label for="profile-name">Nome *</label>
+        <input id="profile-name" name="name" required placeholder="Flavio Rocha" />
+
+        <label for="profile-email">E-mail *</label>
+        <input id="profile-email" name="email" type="email" required placeholder="flavio@example.com" />
+
+        <label for="profile-bio">Bio</label>
+        <textarea id="profile-bio" name="bio" placeholder="Dev backend apaixonado por APIs"></textarea>
+
+        <label for="profile-avatar">Avatar URL</label>
+        <input id="profile-avatar" name="avatarUrl" placeholder="https://example.com/flavio.png" />
+
+        <button type="submit">Salvar perfil</button>
+      </form>
+      <p class="status" id="profile-status"></p>
+      <pre id="profile-result">A resposta da API aparece aqui.</pre>
+    </div>
+
+    <div class="card">
+      <h2>2. Nova tecnologia</h2>
+      <form id="form-technology">
+        <label for="technology-name">Nome *</label>
+        <input id="technology-name" name="name" required placeholder="Python" />
+
+        <button type="submit">Salvar tecnologia</button>
+      </form>
+      <p class="status" id="technology-status"></p>
+      <pre id="technology-result">A resposta da API aparece aqui.</pre>
+    </div>
+
+    <div class="card">
+      <h2>3. Novo projeto</h2>
+      <form id="form-project">
+        <label for="project-title">Título *</label>
+        <input id="project-title" name="title" required placeholder="DevShowcase API" />
+
+        <label for="project-description">Descrição</label>
+        <textarea id="project-description" name="description" placeholder="Backend do projeto"></textarea>
+
+        <label for="project-repo">Repository URL *</label>
+        <input id="project-repo" name="repositoryUrl" required value="https://github.com/flavio/devshowcase" />
+
+        <label for="project-profile-id">Profile ID *</label>
+        <input id="project-profile-id" name="profileId" type="number" min="1" required placeholder="1" />
+        <p class="hint">Use o <code>id</code> retornado ao salvar um perfil acima.</p>
+
+        <label for="project-technology-ids">Technology IDs</label>
+        <input id="project-technology-ids" name="technologyIds" placeholder="1, 2" />
+        <p class="hint">Opcional. IDs separados por vírgula.</p>
+
+        <button type="submit">Salvar projeto</button>
+      </form>
+      <p class="status" id="project-status"></p>
+      <pre id="project-result">A resposta da API aparece aqui.</pre>
+    </div>
+  </div>
+
+  <script>
+    async function submitJson(url, method, body) {
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = text;
+      }
+      return { status: response.status, data };
+    }
+
+    function renderResult(prefix, status, data) {
+      const statusEl = document.getElementById(`${prefix}-status`);
+      const resultEl = document.getElementById(`${prefix}-result`);
+      const ok = status >= 200 && status < 300;
+      statusEl.textContent = `HTTP ${status}`;
+      statusEl.className = `status ${ok ? "ok" : "err"}`;
+      resultEl.textContent = JSON.stringify(data, null, 2);
+    }
+
+    document.getElementById("form-profile").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const payload = {
+        name: form.get("name"),
+        email: form.get("email"),
+        bio: form.get("bio") || undefined,
+        avatarUrl: form.get("avatarUrl") || undefined,
+      };
+      try {
+        const { status, data } = await submitJson("/api/profiles", "POST", payload);
+        renderResult("profile", status, data);
+      } catch (error) {
+        renderResult("profile", 0, { message: String(error) });
+      }
+    });
+
+    document.getElementById("form-technology").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const payload = { name: form.get("name") };
+      try {
+        const { status, data } = await submitJson("/api/technologies", "POST", payload);
+        renderResult("technology", status, data);
+      } catch (error) {
+        renderResult("technology", 0, { message: String(error) });
+      }
+    });
+
+    document.getElementById("form-project").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const technologyIdsRaw = (form.get("technologyIds") || "").toString().trim();
+      const technologyIds = technologyIdsRaw
+        ? technologyIdsRaw.split(",").map((value) => Number(value.trim())).filter((value) => !Number.isNaN(value))
+        : [];
+
+      const payload = {
+        title: form.get("title"),
+        description: form.get("description") || undefined,
+        repositoryUrl: form.get("repositoryUrl"),
+        profileId: Number(form.get("profileId")),
+        technologyIds,
+      };
+      try {
+        const { status, data } = await submitJson("/api/projects", "POST", payload);
+        renderResult("project", status, data);
+      } catch (error) {
+        renderResult("project", 0, { message: String(error) });
+      }
+    });
+  </script>
+</body>
+</html>
